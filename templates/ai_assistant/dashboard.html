@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+{% block title %}AI Assistant – Home Care Furniture ERP{% endblock %}
+{% block page_title %}AI Business Assistant{% endblock %}
+
+{% block extra_head %}
+<style>
+  .chat-card {
+    display: flex;
+    flex-direction: column;
+    height: 580px;
+  }
+  #chat-window {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    padding: 1.1rem;
+    background: #f8fafc;
+    -webkit-overflow-scrolling: touch;
+  }
+  .msg-user {
+    align-self: flex-end;
+    background: var(--brand-blue, #1e3a6e);
+    color: #fff;
+    padding: 0.65rem 1rem;
+    border-radius: 16px 16px 4px 16px;
+    max-width: 78%;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+  .msg-ai {
+    align-self: flex-start;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    padding: 0.8rem 1rem;
+    border-radius: 16px 16px 16px 4px;
+    max-width: 88%;
+    font-size: 0.875rem;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    word-break: break-word;
+  }
+  .msg-ai.loading { color: #94a3b8; font-style: italic; }
+  .msg-error { border-color: #fca5a5; background: #fef2f2; color: #991b1b; }
+  .chips-row {
+    display: flex;
+    gap: 0.4rem;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .chips-row::-webkit-scrollbar { display: none; }
+  .suggestion-chip {
+    cursor: pointer; transition: all 0.15s;
+    font-size: 0.75rem; user-select: none;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .suggestion-chip:hover, .suggestion-chip:active {
+    background: #1e3a6e !important;
+    color: #fff !important;
+    border-color: #1e3a6e !important;
+  }
+  .provider-badge-claude { background: #fef3c7; color: #92400e; }
+  .provider-badge-gemini { background: #dbeafe; color: #1e40af; }
+  .chat-input-bar {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid #f1f5f9;
+    background: #fff;
+    border-radius: 0 0 14px 14px;
+  }
+  .chat-input-row { display: flex; gap: 0.5rem; }
+  .chat-input-row input { min-height: 44px; font-size: 0.9rem; }
+  .chat-input-row button { min-width: 44px; min-height: 44px; flex-shrink: 0; }
+  @media (max-width: 768px) {
+    .chat-card { height: calc(100vh - 180px); min-height: 400px; }
+    .msg-user, .msg-ai { max-width: 92%; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% if is_local %}
+<div class="alert d-flex align-items-start gap-3 mb-4" style="background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:0.9rem 1.25rem;">
+  <i class="bi bi-cpu-fill fs-5 mt-1" style="color:#16a34a;"></i>
+  <div>
+    <div class="fw-bold mb-1" style="color:#15803d;">Running on Local AI Engine</div>
+    <div class="small" style="color:#166534;">
+      Fully functional — analyses your live business data with no API needed.<br>
+      For smarter natural-language answers, optionally add <code>ANTHROPIC_API_KEY=sk-ant-...</code> to <code>.env</code>.
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-3">
+  <!-- Chat panel -->
+  <div class="col-lg-8">
+    <div class="card-panel chat-card">
+      <div class="panel-header">
+        <i class="bi bi-stars" style="color:#c9962a;"></i>
+        {% if ai_provider == 'Claude' %}
+          Claude AI Assistant
+          <span class="badge provider-badge-claude ms-2" style="font-size:0.7rem;">Powered by Claude Haiku</span>
+        {% elif ai_provider == 'Gemini' %}
+          Gemini AI Assistant
+          <span class="badge provider-badge-gemini ms-2" style="font-size:0.7rem;">Powered by Gemini 1.5 Flash</span>
+        {% else %}
+          AI Business Assistant
+          <span class="badge ms-2" style="font-size:0.7rem;background:#dcfce7;color:#166534;">Local Engine ✓</span>
+        {% endif %}
+      </div>
+
+      <div id="chat-window">
+        <div class="msg-ai">
+          <strong>Hello!</strong> I'm your Home Care Furniture AI assistant.
+          {% if ai_provider %}
+            Powered by {{ ai_provider }}.<br><br>
+          {% else %}
+            <br><br>
+          {% endif %}
+          I have live access to your inventory, sales, and employee data. Ask me anything — inventory forecasting, product recommendations, or sales trends.
+        </div>
+      </div>
+
+      <div class="chat-input-bar">
+        <div class="chips-row mb-2">
+          <span class="badge bg-light text-dark border suggestion-chip"
+                onclick="fillQuery('Based on recent sales, which products should I restock next month?')">
+            <i class="bi bi-box-arrow-in-down me-1"></i>Restock forecast
+          </span>
+          <span class="badge bg-light text-dark border suggestion-chip"
+                onclick="fillQuery('Which products have the highest profit margin?')">
+            <i class="bi bi-graph-up me-1"></i>Top margins
+          </span>
+          <span class="badge bg-light text-dark border suggestion-chip"
+                onclick="fillQuery('A customer wants a complete bedroom set. What do you recommend?')">
+            <i class="bi bi-search-heart me-1"></i>Product match
+          </span>
+          <span class="badge bg-light text-dark border suggestion-chip"
+                onclick="fillQuery('Give me a summary of this month\\'s business performance.')">
+            <i class="bi bi-clipboard-data me-1"></i>Monthly summary
+          </span>
+          <span class="badge bg-light text-dark border suggestion-chip"
+                onclick="fillQuery('Show me top customers')">
+            <i class="bi bi-people me-1"></i>Top customers
+          </span>
+          <span class="badge bg-light text-dark border suggestion-chip"
+                onclick="fillQuery('Show low stock alerts')">
+            <i class="bi bi-exclamation-triangle me-1"></i>Low stock
+          </span>
+        </div>
+        <div class="chat-input-row">
+          <input type="text" id="queryInput" class="form-control"
+                 placeholder="Ask about sales, inventory, staff..."
+                 onkeydown="if(event.key==='Enter') sendQuery()"
+                 autocomplete="off" autocorrect="off" spellcheck="false">
+          <button class="btn btn-new-sale" onclick="sendQuery()" id="sendBtn">
+            <i class="bi bi-send-fill"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="col-lg-4 d-flex flex-column gap-3">
+    <div class="card-panel">
+      <div class="panel-header"><i class="bi bi-lightbulb" style="color:#c9962a;"></i> What can I ask?</div>
+      <div class="p-3">
+        <ul class="list-unstyled small mb-0" style="line-height:2.1;">
+          <li><i class="bi bi-check-circle text-success me-2"></i>Inventory forecasting &amp; reorder suggestions</li>
+          <li><i class="bi bi-check-circle text-success me-2"></i>Smart product matching for customers</li>
+          <li><i class="bi bi-check-circle text-success me-2"></i>Sales trend analysis</li>
+          <li><i class="bi bi-check-circle text-success me-2"></i>Low stock alerts &amp; supplier planning</li>
+          <li><i class="bi bi-check-circle text-success me-2"></i>Employee labor cost summaries</li>
+          <li><i class="bi bi-check-circle text-success me-2"></i>Monthly P&amp;L breakdown</li>
+        </ul>
+      </div>
+    </div>
+
+    {% if recent_queries %}
+    <div class="card-panel flex-grow-1">
+      <div class="panel-header"><i class="bi bi-clock-history text-secondary"></i> Recent Queries</div>
+      <div class="p-2" style="overflow-y:auto;max-height:320px;">
+        {% for q in recent_queries %}
+        <div class="p-2 rounded mb-1 {% if q.was_successful %}bg-light{% else %}bg-danger-subtle{% endif %}"
+             style="cursor:pointer;font-size:0.8rem;" onclick="fillQuery('{{ q.query|escapejs }}')">
+          <div class="text-truncate fw-semibold">{{ q.query|truncatechars:55 }}</div>
+          <div class="text-muted" style="font-size:0.7rem;">
+            {{ q.created_at|timesince }} ago
+            {% if q.latency_ms %} · {{ q.latency_ms }}ms{% endif %}
+            {% if not q.was_successful %}<span class="text-danger">· failed</span>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF = '{{ csrf_token }}';
+
+function fillQuery(text) {
+  const inp = document.getElementById('queryInput');
+  if (inp.disabled) return;
+  inp.value = text;
+  inp.focus();
+}
+
+function appendMessage(text, type, isError) {
+  const win = document.getElementById('chat-window');
+  const div = document.createElement('div');
+  div.className = type === 'user' ? 'msg-user' : 'msg-ai';
+  if (isError) div.classList.add('msg-error');
+  div.textContent = text;
+  win.appendChild(div);
+  win.scrollTop = win.scrollHeight;
+  return div;
+}
+
+async function sendQuery() {
+  const input = document.getElementById('queryInput');
+  const btn = document.getElementById('sendBtn');
+  const query = input.value.trim();
+  if (!query || btn.disabled) return;
+
+  appendMessage(query, 'user');
+  input.value = '';
+  btn.disabled = true;
+  input.disabled = true;
+
+  const loadingDiv = appendMessage('Thinking…', 'ai');
+  loadingDiv.classList.add('loading');
+
+  try {
+    const resp = await fetch("{% url 'ai_assistant:ask' %}", {
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'query=' + encodeURIComponent(query)
+    });
+    const data = await resp.json();
+    loadingDiv.classList.remove('loading');
+
+    if (data.error) {
+      loadingDiv.textContent = data.error;
+      loadingDiv.classList.add('msg-error');
+    } else {
+      loadingDiv.textContent = data.response;
+      if (data.latency_ms) {
+        const meta = document.createElement('div');
+        meta.style.cssText = 'font-size:0.68rem;color:#94a3b8;margin-top:6px;';
+        meta.textContent = `${data.latency_ms}ms`;
+        loadingDiv.appendChild(meta);
+      }
+    }
+  } catch (e) {
+    loadingDiv.textContent = 'Connection error. Please try again.';
+    loadingDiv.classList.add('msg-error');
+  }
+
+  btn.disabled = false;
+  input.disabled = false;
+  input.focus();
+}
+</script>
+{% endblock %}

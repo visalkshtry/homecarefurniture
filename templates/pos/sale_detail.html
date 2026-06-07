@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Sale {{ sale.receipt_number }} – Home Care Furniture ERP{% endblock %}
+{% block page_title %}Sale {{ sale.receipt_number }}{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'pos:receipt' sale.pk %}" class="btn btn-danger btn-sm" target="_blank">
+  <i class="bi bi-file-pdf me-1"></i>Download PDF
+</a>
+<a href="{% url 'pos:dashboard' %}" class="btn btn-outline-secondary btn-sm ms-2">
+  <i class="bi bi-arrow-left me-1"></i>Back
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="card-panel">
+      <div class="panel-header"><i class="bi bi-info-circle text-primary"></i> Sale Details</div>
+      <div class="p-3">
+        <dl class="row small mb-0">
+          <dt class="col-5 text-muted">Receipt #</dt><dd class="col-7 fw-semibold">{{ sale.receipt_number }}</dd>
+          <dt class="col-5 text-muted">Date</dt><dd class="col-7">{{ sale.sale_date|date:"M j, Y g:i A" }}</dd>
+          <dt class="col-5 text-muted">Customer</dt><dd class="col-7">{{ sale.customer.full_name|default:"Walk-in" }}</dd>
+          <dt class="col-5 text-muted">Sales Rep</dt><dd class="col-7">{{ sale.served_by.full_name|default:"–" }}</dd>
+          <dt class="col-5 text-muted">Payment</dt><dd class="col-7">{{ sale.get_payment_method_display }}</dd>
+          <dt class="col-5 text-muted">Status</dt>
+          <dd class="col-7">
+            {% if sale.status == 'completed' %}<span class="badge bg-success">Completed</span>
+            {% else %}<span class="badge bg-warning text-dark">{{ sale.get_status_display }}</span>{% endif %}
+          </dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="card-panel">
+      <div class="panel-header"><i class="bi bi-cart text-success"></i> Line Items</div>
+      <div class="table-responsive">
+        <table class="table align-middle mb-0 small">
+          <thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr></thead>
+          <tbody>
+            {% for item in items %}
+            <tr>
+              <td>{{ item.finished_good.name }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>रू {{ item.unit_price }}</td>
+              <td class="fw-semibold">रू {{ item.line_total }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot class="table-light">
+            <tr><td colspan="3" class="text-end text-muted">Subtotal</td><td>रू {{ sale.subtotal }}</td></tr>
+            <tr><td colspan="3" class="text-end text-muted">Tax</td><td>रू {{ sale.tax_amount }}</td></tr>
+            <tr class="fw-bold"><td colspan="3" class="text-end">Total</td><td class="text-success fs-6">रू {{ sale.total_amount }}</td></tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

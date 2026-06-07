@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Timesheet – Home Care Furniture ERP{% endblock %}
+{% block page_title %}Weekly Timesheet{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'hr:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+  <i class="bi bi-arrow-left me-1"></i>Back to HR
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+  {% for row in weekly_summary %}
+  <div class="col-sm-6 col-md-4 col-xl-3">
+    <div class="stat-card">
+      <div class="fw-semibold mb-1">{{ row.employee.full_name }}</div>
+      <div class="text-muted small mb-2">{{ row.employee.department.name|default:"No dept" }}</div>
+      <div class="d-flex justify-content-between">
+        <div>
+          <div class="fw-bold">{{ row.hours }}h</div>
+          <div class="text-muted" style="font-size:0.75rem">This week</div>
+        </div>
+        <div class="text-end">
+          <div class="fw-bold text-success">रू {{ row.cost }}</div>
+          <div class="text-muted" style="font-size:0.75rem">Labor cost</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="card-panel">
+  <div class="panel-header"><i class="bi bi-clock-history text-primary"></i> All Entries — Week of {{ week_start|date:"M j" }}</div>
+  <div class="table-responsive">
+    <table class="table align-middle mb-0 small">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Date</th>
+          <th>Clock In</th>
+          <th>Meal Break</th>
+          <th>Clock Out</th>
+          <th>Gross</th>
+          <th>Net Hours</th>
+          <th>Cost</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in entries %}
+        <tr>
+          <td class="fw-semibold">{{ entry.employee.full_name }}</td>
+          <td>{{ entry.clock_in|date:"M j" }}</td>
+          <td>{{ entry.clock_in|time:"g:i A" }}</td>
+          <td>
+            {% if entry.meal_start and entry.meal_end %}
+              {{ entry.meal_duration_hours }}h
+            {% elif entry.meal_start %}
+              <span class="text-warning">On break</span>
+            {% else %}–{% endif %}
+          </td>
+          <td>{% if entry.clock_out %}{{ entry.clock_out|time:"g:i A" }}{% else %}<span class="badge badge-status-active">Active</span>{% endif %}</td>
+          <td>{% if entry.gross_hours %}{{ entry.gross_hours }}h{% else %}–{% endif %}</td>
+          <td class="fw-semibold">{% if entry.net_hours %}{{ entry.net_hours }}h{% else %}–{% endif %}</td>
+          <td class="text-success fw-semibold">{% if entry.labor_cost %}रू {{ entry.labor_cost }}{% else %}–{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-4">No entries this week.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

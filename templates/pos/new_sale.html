@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}New Sale – Home Care Furniture ERP{% endblock %}
+{% block page_title %}New Sale{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'pos:dashboard' %}" class="btn btn-outline-secondary btn-sm">
+  <i class="bi bi-arrow-left me-1"></i>Back
+</a>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  .product-row { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 0.5rem; }
+  .product-row:hover { border-color: #93c5fd; }
+  #order-summary { position: sticky; top: 1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<form method="post" id="saleForm">
+  {% csrf_token %}
+  <div class="row g-3">
+    <!-- Left: sale details + products -->
+    <div class="col-lg-8">
+      <div class="card-panel mb-3">
+        <div class="panel-header"><i class="bi bi-person text-primary"></i> Sale Info</div>
+        <div class="p-3">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Customer <span class="text-muted fw-normal">(optional)</span></label>
+              <select name="customer_id" class="form-select form-select-sm">
+                <option value="">Walk-in Customer</option>
+                {% for c in customers %}
+                <option value="{{ c.id }}">{{ c.full_name }} {% if c.phone %}– {{ c.phone }}{% endif %}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Sales Rep <span class="text-muted fw-normal">(optional)</span></label>
+              <select name="employee_id" class="form-select form-select-sm">
+                <option value="">— Select —</option>
+                {% for emp in employees %}
+                <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Payment Method</label>
+              <select name="payment_method" class="form-select form-select-sm">
+                {% for val, label in payment_choices %}
+                <option value="{{ val }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small fw-semibold">Notes</label>
+              <input type="text" name="notes" class="form-control form-control-sm" placeholder="Optional notes...">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-panel">
+        <div class="panel-header">
+          <i class="bi bi-cart text-primary"></i> Products
+          <button type="button" class="btn btn-sm btn-primary ms-auto" onclick="addProductRow()">
+            <i class="bi bi-plus-lg me-1"></i>Add Product
+          </button>
+        </div>
+        <div class="p-3" id="productsContainer">
+          <!-- rows added by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: order summary -->
+    <div class="col-lg-4">
+      <div class="card-panel" id="order-summary">
+        <div class="panel-header"><i class="bi bi-receipt text-success"></i> Order Summary</div>
+        <div class="p-3">
+          <div id="summary-lines" class="mb-3">
+            <p class="text-muted small text-center py-3">Add products to see summary.</p>
+          </div>
+          <div class="border-top pt-3">
+            <div class="d-flex justify-content-between small mb-1">
+              <span class="text-muted">Subtotal</span>
+              <span id="sum-subtotal">रू 0.00</span>
+            </div>
+            <div class="d-flex justify-content-between small mb-1">
+              <span class="text-muted">Tax (8%)</span>
+              <span id="sum-tax">रू 0.00</span>
+            </div>
+            <div class="d-flex justify-content-between fw-bold mt-2 pt-2 border-top">
+              <span>Total</span>
+              <span id="sum-total" class="fs-5 text-success">रू 0.00</span>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-success w-100 mt-3 fw-semibold">
+            <i class="bi bi-check-lg me-2"></i>Complete Sale
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const products = [
+  {% for p in products %}
+  {id: {{ p.id }}, name: "{{ p.name|escapejs }}", price: {{ p.selling_price }}, stock: {{ p.quantity_on_hand }}, category: "{{ p.category.name|escapejs }}"},
+  {% endfor %}
+];
+
+let rowCount = 0;
+
+function addProductRow() {
+  rowCount++;
+  const container = document.getElementById('productsContainer');
+  const div = document.createElement('div');
+  div.className = 'product-row d-flex align-items-center gap-2';
+  div.id = 'row-' + rowCount;
+
+  let opts = '<option value="">— Select Product —</option>';
+  products.forEach(p => {
+    opts += `<option value="${p.id}" data-price="${p.price}" data-stock="${p.stock}">${p.name} ( रू ${p.price.toFixed(2)}) — ${p.stock} in stock</option>`;
+  });
+
+  div.innerHTML = `
+    <select name="product_id" class="form-select form-select-sm flex-grow-1" onchange="productChanged(this, ${rowCount})">
+      ${opts}
+    </select>
+    <input type="number" name="quantity" value="1" min="1" class="form-control form-control-sm" style="width:80px"
+           id="qty-${rowCount}" onchange="recalculate()">
+    <span class="text-muted small" id="stock-${rowCount}" style="min-width:60px"></span>
+    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeRow(${rowCount})">
+      <i class="bi bi-trash"></i>
+    </button>`;
+
+  container.appendChild(div);
+  recalculate();
+}
+
+function productChanged(sel, id) {
+  const opt = sel.selectedOptions[0];
+  const stock = opt.dataset.stock || '';
+  document.getElementById('stock-' + id).textContent = stock ? `${stock} avail` : '';
+  const qtyInput = document.getElementById('qty-' + id);
+  if (stock) qtyInput.max = stock;
+  recalculate();
+}
+
+function removeRow(id) {
+  const el = document.getElementById('row-' + id);
+  if (el) el.remove();
+  recalculate();
+}
+
+function recalculate() {
+  const selects = document.querySelectorAll('select[name="product_id"]');
+  const qtys = document.querySelectorAll('input[name="quantity"]');
+  let subtotal = 0;
+  let lines = '';
+
+  selects.forEach((sel, i) => {
+    const opt = sel.selectedOptions[0];
+    const price = parseFloat(opt.dataset.price || 0);
+    const qty = parseInt(qtys[i].value || 1);
+    if (price > 0 && qty > 0) {
+      const lineTotal = price * qty;
+      subtotal += lineTotal;
+      lines += `<div class="d-flex justify-content-between small mb-1">
+        <span class="text-truncate me-2">${opt.text.split(' (रू')[0]} ×${qty}</span>
+        <span class="fw-semibold">रू ${lineTotal.toFixed(2)}</span>
+      </div>`;
+    }
+  });
+
+  const tax = subtotal * 0.08;
+  const total = subtotal + tax;
+
+  document.getElementById('summary-lines').innerHTML = lines || '<p class="text-muted small text-center py-2">No products added.</p>';
+  document.getElementById('sum-subtotal').textContent = 'रू ' + subtotal.toFixed(2);
+  document.getElementById('sum-tax').textContent = 'रू ' + tax.toFixed(2);
+  document.getElementById('sum-total').textContent = 'रू ' + total.toFixed(2);
+}
+
+// Add one row by default
+addProductRow();
+</script>
+{% endblock %}

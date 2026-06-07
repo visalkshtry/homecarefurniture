@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Inventory – Home Care Furniture ERP{% endblock %}
+{% block page_title %}Inventory{% endblock %}
+
+{% block topbar_actions %}
+<a href="/admin/inventory/" class="btn btn-outline-secondary btn-sm">
+  <i class="bi bi-pencil me-1"></i>Manage via Admin
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon mb-2" style="background:#dbeafe;color:#1a56db"><i class="bi bi-boxes"></i></div>
+      <div class="stat-value">{{ raw_materials|length }}</div>
+      <div class="stat-label">Raw Materials</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon mb-2" style="background:#dcfce7;color:#166534"><i class="bi bi-bag-fill"></i></div>
+      <div class="stat-value">{{ finished_goods|length }}</div>
+      <div class="stat-label">Finished Products</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon mb-2" style="background:#fef9c3;color:#854d0e"><i class="bi bi-exclamation-triangle-fill"></i></div>
+      <div class="stat-value {% if low_stock %}text-warning{% endif %}">{{ low_stock|length }}</div>
+      <div class="stat-label">Low Stock Materials</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon mb-2" style="background:#fee2e2;color:#991b1b"><i class="bi bi-x-circle-fill"></i></div>
+      <div class="stat-value {% if out_of_stock %}text-danger{% endif %}">{{ out_of_stock|length }}</div>
+      <div class="stat-label">Out of Stock Products</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-6">
+    <div class="stat-card">
+      <div class="small text-muted mb-1">Raw Material Inventory Value</div>
+      <div class="fw-bold fs-5 text-primary">रू {{ total_raw_value|floatformat:2 }}</div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="stat-card">
+      <div class="small text-muted mb-1">Finished Goods Retail Value</div>
+      <div class="fw-bold fs-5 text-success">रू {{ total_fg_value|floatformat:2 }}</div>
+    </div>
+  </div>
+</div>
+
+{% if low_stock %}
+<div class="alert alert-warning d-flex align-items-center gap-2 mb-3">
+  <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+  <strong>{{ low_stock|length }} material(s) are at or below reorder level:</strong>
+  {% for m in low_stock %}<span class="badge bg-warning text-dark ms-1">{{ m.name }}</span>{% endfor %}
+</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card-panel">
+      <div class="panel-header"><i class="bi bi-boxes text-primary"></i> Raw Materials</div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 small">
+          <thead><tr><th>Material</th><th>Category</th><th>Qty</th><th>Unit</th><th>Value</th><th></th></tr></thead>
+          <tbody>
+            {% for m in raw_materials %}
+            <tr class="{% if m.is_low_stock %}table-warning{% endif %}">
+              <td>
+                <div class="fw-semibold">{{ m.name }}</div>
+                <div class="text-muted" style="font-size:0.72rem">{{ m.sku }}</div>
+              </td>
+              <td>{{ m.category.name }}</td>
+              <td class="fw-semibold">{{ m.quantity_on_hand }}</td>
+              <td class="text-muted">{{ m.unit }}</td>
+              <td>रू {{ m.total_value }}</td>
+              <td>{% if m.is_low_stock %}<i class="bi bi-exclamation-triangle-fill text-warning"></i>{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-4">No materials. <a href="/admin/inventory/rawmaterial/add/">Add via Admin</a>.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card-panel">
+      <div class="panel-header"><i class="bi bi-bag-fill text-success"></i> Finished Products</div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 small">
+          <thead><tr><th>Product</th><th>Category</th><th>Stock</th><th>Price</th><th>Margin</th></tr></thead>
+          <tbody>
+            {% for g in finished_goods %}
+            <tr class="{% if g.quantity_on_hand == 0 %}table-danger{% endif %}">
+              <td>
+                <div class="fw-semibold">{{ g.name }}</div>
+                <div class="text-muted" style="font-size:0.72rem">{{ g.sku }}</div>
+              </td>
+              <td>{{ g.category.name }}</td>
+              <td class="fw-semibold {% if g.quantity_on_hand == 0 %}text-danger{% endif %}">{{ g.quantity_on_hand }}</td>
+              <td>रू {{ g.selling_price }}</td>
+              <td>{% if g.profit_margin %}{{ g.profit_margin }}%{% else %}<span class="text-muted">–</span>{% endif %}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-4">No products. <a href="/admin/inventory/finishedgood/add/">Add via Admin</a>.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if recent_runs %}
+<div class="card-panel mt-3">
+  <div class="panel-header"><i class="bi bi-gear-fill text-secondary"></i> Recent Production Runs</div>
+  <div class="table-responsive">
+    <table class="table align-middle mb-0 small">
+      <thead><tr><th>#</th><th>Product</th><th>Qty</th><th>Status</th><th>Date</th><th></th></tr></thead>
+      <tbody>
+        {% for run in recent_runs %}
+        <tr>
+          <td>{{ run.pk }}</td>
+          <td>{{ run.finished_good.name }}</td>
+          <td>{{ run.quantity_produced }}</td>
+          <td>
+            {% if run.status == 'completed' %}
+              <span class="badge bg-success-subtle text-success">Completed</span>
+            {% elif run.status == 'pending' %}
+              <span class="badge bg-warning-subtle text-warning">Pending</span>
+            {% else %}
+              <span class="badge bg-secondary-subtle text-secondary">{{ run.get_status_display }}</span>
+            {% endif %}
+          </td>
+          <td>{{ run.production_date|date:"M j, g:i A" }}</td>
+          <td>
+            {% if run.status == 'pending' %}
+            <form method="post" action="{% url 'inventory:production_complete' run.pk %}">
+              {% csrf_token %}
+              <button class="btn btn-success btn-sm py-0">Complete</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

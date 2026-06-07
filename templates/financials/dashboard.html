@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}P&L Dashboard – Home Care Furniture ERP{% endblock %}
+{% block page_title %}Profit & Loss Dashboard{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon mb-2" style="background:#dcfce7;color:#166534"><i class="bi bi-graph-up-arrow"></i></div>
+      <div class="stat-value text-success">रू {{ current_revenue|floatformat:2 }}</div>
+      <div class="stat-label">Revenue This Month</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon mb-2" style="background:#fee2e2;color:#991b1b"><i class="bi bi-arrow-down-circle-fill"></i></div>
+      <div class="stat-value text-danger">रू {{ current_expenses|floatformat:2 }}</div>
+      <div class="stat-label">Operating Expenses</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon mb-2" style="background:#fef9c3;color:#854d0e"><i class="bi bi-people-fill"></i></div>
+      <div class="stat-value">रू {{ current_labor|floatformat:2 }}</div>
+      <div class="stat-label">Labor Cost</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon mb-2" style="background:{% if current_profit >= 0 %}#dbeafe{% else %}#fee2e2{% endif %};color:{% if current_profit >= 0 %}#1a56db{% else %}#991b1b{% endif %}">
+        <i class="bi bi-{% if current_profit >= 0 %}coin{% else %}emoji-frown{% endif %}"></i>
+      </div>
+      <div class="stat-value {% if current_profit >= 0 %}text-primary{% else %}text-danger{% endif %}">
+        रू {{ current_profit|floatformat:2 }}
+      </div>
+      <div class="stat-label">Net Profit This Month</div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-3 mb-3">
+  <div class="col-lg-8">
+    <div class="card-panel">
+      <div class="panel-header"><i class="bi bi-bar-chart-fill text-primary"></i> Revenue vs Expenses — Last 6 Months</div>
+      <div class="p-3">
+        <canvas id="revenueChart" height="100"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card-panel">
+      <div class="panel-header"><i class="bi bi-pie-chart-fill text-warning"></i> Expenses by Category</div>
+      <div class="p-3 d-flex align-items-center justify-content-center" style="min-height:220px">
+        {% if expense_cat_json != '{}' %}
+        <canvas id="expenseChart"></canvas>
+        {% else %}
+        <div class="text-center text-muted">
+          <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
+          No expenses recorded this month.
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Profit Line Chart -->
+<div class="card-panel mb-3">
+  <div class="panel-header"><i class="bi bi-graph-up text-success"></i> Net Profit Trend</div>
+  <div class="p-3">
+    <canvas id="profitChart" height="60"></canvas>
+  </div>
+</div>
+
+<!-- Recent Expenses -->
+<div class="card-panel">
+  <div class="panel-header">
+    <i class="bi bi-receipt text-danger"></i> Recent Expenses
+    <a href="/admin/financials/expense/add/" class="btn btn-sm btn-outline-danger ms-auto">
+      <i class="bi bi-plus-lg me-1"></i>Add Expense
+    </a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0 small">
+      <thead>
+        <tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th><th>Recorded By</th></tr>
+      </thead>
+      <tbody>
+        {% for e in recent_expenses %}
+        <tr>
+          <td class="text-muted">{{ e.expense_date|date:"M j, Y" }}</td>
+          <td>{{ e.description }}</td>
+          <td><span class="badge bg-secondary-subtle text-secondary">{{ e.get_category_display }}</span></td>
+          <td class="fw-semibold text-danger">-रू {{ e.amount }}</td>
+          <td class="text-muted">{{ e.recorded_by.full_name|default:"–" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-4">
+          No expenses yet. <a href="/admin/financials/expense/add/">Add via Admin</a>.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const monthData = {{ months_json|safe }};
+const labels = monthData.map(m => m.label);
+const revenues = monthData.map(m => m.revenue);
+const expenses = monthData.map(m => m.expenses);
+const profits = monthData.map(m => m.profit);
+
+// Revenue vs Expenses bar chart
+new Chart(document.getElementById('revenueChart'), {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [
+      {
+        label: 'Revenue',
+        data: revenues,
+        backgroundColor: 'rgba(26, 86, 219, 0.7)',
+        borderRadius: 6,
+      },
+      {
+        label: 'Total Costs',
+        data: expenses,
+        backgroundColor: 'rgba(220, 38, 38, 0.6)',
+        borderRadius: 6,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'top' } },
+    scales: {
+      y: {
+        ticks: { callback: v => 'रू ' + v.toLocaleString() },
+        grid: { color: '#f1f5f9' }
+      }
+    }
+  }
+});
+
+// Net profit line chart
+new Chart(document.getElementById('profitChart'), {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [{
+      label: 'Net Profit',
+      data: profits,
+      borderColor: '#16a34a',
+      backgroundColor: 'rgba(22, 163, 74, 0.08)',
+      tension: 0.4,
+      fill: true,
+      pointBackgroundColor: profits.map(p => p >= 0 ? '#16a34a' : '#dc2626'),
+      pointRadius: 5,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: {
+        ticks: { callback: v => 'रू ' + v.toLocaleString() },
+        grid: { color: '#f1f5f9' }
+      }
+    }
+  }
+});
+
+// Expense donut
+const expenseCat = {{ expense_cat_json|safe }};
+if (Object.keys(expenseCat).length > 0) {
+  const palette = ['#1a56db','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#06b6d4'];
+  new Chart(document.getElementById('expenseChart'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(expenseCat),
+      datasets: [{
+        data: Object.values(expenseCat),
+        backgroundColor: palette,
+        borderWidth: 2,
+        borderColor: '#fff',
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 10 } }
+      }
+    }
+  });
+}
+</script>
+{% endblock %}

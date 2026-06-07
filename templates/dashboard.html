@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – Home Care Furniture ERP{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'pos:new_sale' %}" class="btn btn-new-sale">
+  <i class="bi bi-plus-lg me-1"></i>New Sale
+</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── KPI Cards ── -->
+<div class="row g-3 mb-4">
+
+  <!-- Today's Revenue -->
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-start justify-content-between">
+        <div class="stat-icon" style="background:#dbeafe;color:#1a56db">
+          <i class="bi bi-currency-rupee"></i>
+        </div>
+        <span class="stat-badge badge-today">Today</span>
+      </div>
+      <div class="stat-value">रू {{ today_revenue|floatformat:2 }}</div>
+      <div class="stat-label">Today's Revenue</div>
+      <!-- subtle circle decoration -->
+      <div class="card-illustration">
+        <svg width="90" height="90" viewBox="0 0 90 90" fill="none">
+          <circle cx="45" cy="45" r="40" stroke="#1a56db" stroke-width="18" fill="none"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Monthly Revenue -->
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-start justify-content-between">
+        <div class="stat-icon" style="background:#dcfce7;color:#16a34a">
+          <i class="bi bi-graph-up-arrow"></i>
+        </div>
+        <span class="stat-badge badge-month">Month</span>
+      </div>
+      <div class="stat-value">रू {{ month_revenue|floatformat:2 }}</div>
+      <div class="stat-label">Monthly Revenue</div>
+      <div class="card-illustration">
+        <svg width="90" height="90" viewBox="0 0 90 90" fill="none">
+          <circle cx="45" cy="45" r="40" stroke="#16a34a" stroke-width="18" fill="none"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Low Stock Items -->
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-start justify-content-between">
+        <div class="stat-icon" style="background:#fef3c7;color:#d97706">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        {% if low_stock_count > 0 %}
+        <span class="stat-badge badge-alert">Alert</span>
+        {% endif %}
+      </div>
+      <div class="stat-value">{{ low_stock_count }}</div>
+      <div class="stat-label">Low Stock Items</div>
+      <!-- Furniture illustration -->
+      <div class="card-illustration" style="opacity:0.13;right:-4px;bottom:-4px;">
+        <svg width="110" height="72" viewBox="0 0 110 72" fill="none">
+          <!-- Chair -->
+          <rect x="2" y="20" width="36" height="22" rx="4" fill="#92400e"/>
+          <rect x="8" y="42" width="6" height="16" rx="2" fill="#78350f"/>
+          <rect x="24" y="42" width="6" height="16" rx="2" fill="#78350f"/>
+          <rect x="2" y="10" width="36" height="14" rx="4" fill="#b45309"/>
+          <!-- Sofa -->
+          <rect x="50" y="28" width="56" height="22" rx="5" fill="#92400e"/>
+          <rect x="50" y="24" width="14" height="26" rx="4" fill="#b45309"/>
+          <rect x="92" y="24" width="14" height="26" rx="4" fill="#b45309"/>
+          <rect x="55" y="50" width="10" height="14" rx="2" fill="#78350f"/>
+          <rect x="85" y="50" width="10" height="14" rx="2" fill="#78350f"/>
+          <rect x="50" y="18" width="56" height="12" rx="4" fill="#d97706"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Employees Clocked In -->
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="d-flex align-items-start justify-content-between">
+        <div class="stat-icon" style="background:#ede9fe;color:#7c3aed">
+          <i class="bi bi-people-fill"></i>
+        </div>
+      </div>
+      <div class="stat-value">{{ clocked_in_count }}</div>
+      <div class="stat-label">Employees Clocked In</div>
+      <!-- Avatar stack illustration -->
+      <div class="card-illustration" style="opacity:0.15;right:4px;bottom:4px;">
+        <svg width="110" height="66" viewBox="0 0 110 66" fill="none">
+          {% for i in "1234" %}
+          <circle cx="{{ forloop.counter|add:"-1" }}0" cy="28" r="18" fill="#7c3aed"/>
+          <circle cx="{{ forloop.counter|add:"-1" }}0" cy="22" r="8" fill="#ede9fe"/>
+          <path d="{{ forloop.counter|add:"-1" }}0" fill="#7c3aed"/>
+          {% endfor %}
+          <!-- simplified people icons -->
+          <circle cx="14" cy="22" r="9" fill="#c4b5fd"/>
+          <ellipse cx="14" cy="42" rx="13" ry="9" fill="#c4b5fd"/>
+          <circle cx="40" cy="22" r="9" fill="#a78bfa"/>
+          <ellipse cx="40" cy="42" rx="13" ry="9" fill="#a78bfa"/>
+          <circle cx="66" cy="22" r="9" fill="#8b5cf6"/>
+          <ellipse cx="66" cy="42" rx="13" ry="9" fill="#8b5cf6"/>
+          <circle cx="92" cy="22" r="9" fill="#7c3aed"/>
+          <ellipse cx="92" cy="42" rx="13" ry="9" fill="#7c3aed"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Main content row ── -->
+<div class="row g-3">
+
+  <!-- Recent Sales -->
+  <div class="col-lg-7">
+    <div class="card-panel">
+      <div class="panel-header">
+        <i class="bi bi-receipt" style="color:var(--brand-blue)"></i>
+        Recent Sales
+        <a href="{% url 'pos:dashboard' %}" class="btn btn-light btn-view-all ms-auto">View All</a>
+      </div>
+
+      <!-- Desktop table -->
+      <div class="d-none d-md-block table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3">Receipt</th>
+              <th>Customer</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sale in recent_sales %}
+            <tr>
+              <td class="ps-3 fw-semibold" style="font-size:0.8rem;color:#1e2a3a;">{{ sale.receipt_number }}</td>
+              <td>{{ sale.customer.full_name|default:"Walk-in" }}</td>
+              <td class="fw-semibold">रू {{ sale.total_amount }}</td>
+              <td>
+                {% if sale.status == 'completed' %}<span class="badge-completed">Completed</span>
+                {% elif sale.status == 'pending' %}<span class="badge-pending">Pending</span>
+                {% else %}<span class="badge-other">{{ sale.get_status_display }}</span>{% endif %}
+              </td>
+              <td class="pe-3">
+                <a href="{% url 'pos:receipt' sale.pk %}" class="btn btn-sm btn-light py-0 px-2" title="PDF">
+                  <i class="bi bi-file-pdf" style="color:#ef4444;"></i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-5">
+              <i class="bi bi-receipt fs-2 d-block mb-2 opacity-25"></i>No sales yet.
+            </td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile card list -->
+      <div class="d-md-none">
+        {% for sale in recent_sales %}
+        <div class="d-flex align-items-center gap-3 px-3 py-2 border-bottom">
+          <div style="flex:1;min-width:0;">
+            <div class="fw-semibold" style="font-size:0.82rem;color:#1e2a3a;">{{ sale.customer.full_name|default:"Walk-in" }}</div>
+            <div class="text-muted" style="font-size:0.7rem;">{{ sale.receipt_number }}</div>
+          </div>
+          <div class="text-end">
+            <div class="fw-bold" style="font-size:0.85rem;">रू {{ sale.total_amount }}</div>
+            <div class="mt-1">
+              {% if sale.status == 'completed' %}<span class="badge-completed">Completed</span>
+              {% elif sale.status == 'pending' %}<span class="badge-pending">Pending</span>
+              {% else %}<span class="badge-other">{{ sale.get_status_display }}</span>{% endif %}
+            </div>
+          </div>
+          <a href="{% url 'pos:receipt' sale.pk %}" class="btn btn-sm btn-light px-2 py-1">
+            <i class="bi bi-file-pdf" style="color:#ef4444;"></i>
+          </a>
+        </div>
+        {% empty %}
+        <div class="text-center text-muted py-5">
+          <i class="bi bi-receipt fs-2 d-block mb-2 opacity-25"></i>No sales yet.
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- P&L Summary (dark panel) -->
+  <div class="col-lg-5">
+    <div class="pl-panel">
+      <div class="panel-header">
+        <i class="bi bi-bar-chart-fill" style="color:var(--brand-amber-light)"></i>
+        This Month P&amp;L
+        <a href="{% url 'financials:dashboard' %}" class="btn btn-details ms-auto">Details</a>
+      </div>
+
+      <!-- Revenue -->
+      <div class="pl-row">
+        <span class="pl-label">Revenue</span>
+        <span class="pl-value" style="color:#4ade80;">रू {{ month_revenue|floatformat:2 }}</span>
+      </div>
+
+      <!-- Operating Expenses -->
+      <div class="pl-row">
+        <span class="pl-label">Operating Expenses</span>
+        <span class="pl-value" style="color:#f87171;">-रू {{ total_expenses|floatformat:2 }}</span>
+      </div>
+
+      <!-- Net Profit -->
+      <div class="pl-row" style="border-bottom:1px solid rgba(255,255,255,0.07);">
+        <span class="pl-net-label">Net Profit</span>
+        <span class="pl-net-profit {% if net_profit < 0 %}text-danger{% endif %}">
+          रू {{ net_profit|floatformat:2 }}
+        </span>
+      </div>
+
+      <!-- Progress bar -->
+      {% if month_revenue > 0 %}
+      {% widthratio net_profit month_revenue 100 as margin_pct %}
+      <div class="pl-progress-wrap pt-3">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <small style="color:rgba(255,255,255,0.5);font-size:0.75rem;">Profit Margin</small>
+          <small style="color:rgba(255,255,255,0.6);font-size:0.72rem;">Target: 96%</small>
+        </div>
+        <div class="pl-progress-bar-outer">
+          <div class="pl-progress-bar-inner"
+               style="width:{% if net_profit >= 0 %}{{ margin_pct }}{% else %}100{% endif %}%;
+                      background:{% if net_profit >= 0 %}linear-gradient(90deg,#1a56db 0%,#fbbf24 100%){% else %}#ef4444{% endif %};">
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Action buttons -->
+      <div class="pl-actions">
+        <a href="{% url 'hr:dashboard' %}" class="pl-btn">
+          <i class="bi bi-people-fill"></i> HR &amp; Labor
+        </a>
+        <a href="{% url 'inventory:dashboard' %}" class="pl-btn">
+          <i class="bi bi-boxes"></i> Inventory
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

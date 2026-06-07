@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Sales – Home Care Furniture ERP{% endblock %}
+{% block page_title %}Sales & POS{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'pos:new_sale' %}" class="btn btn-primary btn-sm">
+  <i class="bi bi-plus-lg me-1"></i>New Sale
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon mb-2" style="background:#dbeafe;color:#1a56db"><i class="bi bi-currency-dollar"></i></div>
+      <div class="stat-value">रू {{ today_revenue|floatformat:2 }}</div>
+      <div class="stat-label">Today's Revenue</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon mb-2" style="background:#dcfce7;color:#166534"><i class="bi bi-receipt"></i></div>
+      <div class="stat-value">{{ today_count }}</div>
+      <div class="stat-label">Sales Today</div>
+    </div>
+  </div>
+</div>
+
+<div class="card-panel">
+  <div class="panel-header"><i class="bi bi-list-ul text-primary"></i> Recent Sales</div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Receipt #</th>
+          <th>Date</th>
+          <th>Customer</th>
+          <th>Sales Rep</th>
+          <th>Payment</th>
+          <th>Total</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sale in sales %}
+        <tr>
+          <td class="fw-semibold small">{{ sale.receipt_number }}</td>
+          <td class="small text-muted">{{ sale.sale_date|date:"M j, g:i A" }}</td>
+          <td class="small">{{ sale.customer.full_name|default:"Walk-in" }}</td>
+          <td class="small">{{ sale.served_by.full_name|default:"–" }}</td>
+          <td class="small">{{ sale.get_payment_method_display }}</td>
+          <td class="fw-semibold">रू {{ sale.total_amount }}</td>
+          <td>
+            {% if sale.status == 'completed' %}
+              <span class="badge bg-success-subtle text-success">Completed</span>
+            {% elif sale.status == 'pending' %}
+              <span class="badge bg-warning-subtle text-warning">Pending</span>
+            {% elif sale.status == 'refunded' %}
+              <span class="badge bg-info-subtle text-info">Refunded</span>
+            {% else %}
+              <span class="badge bg-secondary-subtle text-secondary">{{ sale.get_status_display }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{% url 'pos:receipt' sale.pk %}" class="btn btn-sm btn-outline-danger py-0" title="PDF Receipt">
+              <i class="bi bi-file-pdf"></i>
+            </a>
+            <a href="{% url 'pos:detail' sale.pk %}" class="btn btn-sm btn-outline-secondary py-0 ms-1">
+              <i class="bi bi-eye"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-5">No sales yet. <a href="{% url 'pos:new_sale' %}">Create the first sale</a>.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
