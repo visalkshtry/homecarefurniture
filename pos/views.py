@@ -182,7 +182,6 @@ def receipt_pdf(request, pk):
     return response
 
 
-@login_required
 def product_price(request, pk):
     fg = get_object_or_404(FinishedGood, pk=pk)
     return JsonResponse({'price': float(fg.selling_price), 'stock': fg.quantity_on_hand, 'name': fg.name})

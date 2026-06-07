@@ -98,7 +98,6 @@ def clock_out(request, employee_id):
     return redirect('hr:dashboard')
 
 
-@login_required
 def timesheet(request):
     today = timezone.localdate()
     week_start = today - timedelta(days=today.weekday())

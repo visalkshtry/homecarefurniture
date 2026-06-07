@@ -89,7 +89,6 @@ def ai_dashboard(request):
     })
 
 
-@login_required
 @require_POST
 def ask_ai(request):
     query = request.POST.get('query', '').strip()

@@ -30,7 +30,6 @@ def inventory_dashboard(request):
     return render(request, 'inventory/dashboard.html', context)
 
 
-@login_required
 def production_run_complete(request, pk):
     run = get_object_or_404(ProductionRun, pk=pk)
     try:
