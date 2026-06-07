@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+
 from django.contrib import messages
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -8,7 +8,6 @@ from datetime import timedelta
 from .models import Employee, TimeEntry
 
 
-@login_required
 def hr_dashboard(request):
     employees = Employee.objects.select_related('user', 'department').filter(is_active=True)
     active_shifts = {s.employee_id: s for s in
@@ -41,7 +40,6 @@ def hr_dashboard(request):
     return render(request, 'hr/dashboard.html', context)
 
 
-@login_required
 @require_POST
 def clock_in(request, employee_id):
     employee = get_object_or_404(Employee, pk=employee_id)
@@ -53,7 +51,6 @@ def clock_in(request, employee_id):
     return redirect('hr:dashboard')
 
 
-@login_required
 @require_POST
 def meal_start(request, employee_id):
     employee = get_object_or_404(Employee, pk=employee_id)
@@ -69,7 +66,6 @@ def meal_start(request, employee_id):
     return redirect('hr:dashboard')
 
 
-@login_required
 @require_POST
 def meal_end(request, employee_id):
     employee = get_object_or_404(Employee, pk=employee_id)
@@ -83,7 +79,6 @@ def meal_end(request, employee_id):
     return redirect('hr:dashboard')
 
 
-@login_required
 @require_POST
 def clock_out(request, employee_id):
     employee = get_object_or_404(Employee, pk=employee_id)

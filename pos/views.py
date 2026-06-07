@@ -1,6 +1,6 @@
 import io
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
@@ -11,7 +11,6 @@ from inventory.models import FinishedGood
 from hr.models import Employee
 
 
-@login_required
 def sales_dashboard(request):
     sales = Sale.objects.select_related('customer', 'served_by__user').order_by('-sale_date')[:50]
     today = timezone.localdate()
@@ -25,7 +24,6 @@ def sales_dashboard(request):
     return render(request, 'pos/dashboard.html', context)
 
 
-@login_required
 def new_sale(request):
     if request.method == 'POST':
         customer_id = request.POST.get('customer_id') or None
@@ -88,14 +86,12 @@ def _render_new_sale(request):
     })
 
 
-@login_required
 def sale_detail(request, pk):
     sale = get_object_or_404(Sale.objects.select_related('customer', 'served_by__user'), pk=pk)
     items = sale.line_items.select_related('finished_good')
     return render(request, 'pos/sale_detail.html', {'sale': sale, 'items': items})
 
 
-@login_required
 def receipt_pdf(request, pk):
     from reportlab.lib.pagesizes import letter
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle

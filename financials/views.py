@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
+
 from django.utils import timezone
 from datetime import timedelta
 import json
@@ -9,7 +9,6 @@ from pos.models import Sale
 from hr.models import TimeEntry
 
 
-@login_required
 def financials_dashboard(request):
     today = timezone.localdate()
 

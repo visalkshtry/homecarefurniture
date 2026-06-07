@@ -1,11 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+
 from django.contrib import messages
 
 from .models import RawMaterial, FinishedGood, MaterialCategory, ProductCategory, ProductionRun
 
 
-@login_required
 def inventory_dashboard(request):
     raw_materials = RawMaterial.objects.select_related('category').all()
     finished_goods = FinishedGood.objects.select_related('category').filter(is_active=True)

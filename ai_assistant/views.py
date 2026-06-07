@@ -1,7 +1,7 @@
 import time
 import json
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
+
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.conf import settings
@@ -78,9 +78,8 @@ def _get_provider():
     return 'local', None
 
 
-@login_required
 def ai_dashboard(request):
-    recent_queries = AIQueryLog.objects.filter(user=request.user).order_by('-created_at')[:10]
+    recent_queries = AIQueryLog.objects.order_by('-created_at')[:10]
     provider, _ = _get_provider()
     provider_label = {'claude': 'Claude', 'gemini': 'Gemini', 'local': 'Local Engine'}.get(provider, 'Local Engine')
     return render(request, 'ai_assistant/dashboard.html', {
@@ -128,7 +127,7 @@ def ask_ai(request):
     latency_ms = int((time.time() - start) * 1000)
 
     AIQueryLog.objects.create(
-        user=request.user,
+        user=request.user if request.user.is_authenticated else None,
         query=query,
         db_context_snapshot=_build_context_snapshot() if provider == 'local' else '',
         response=response_text,

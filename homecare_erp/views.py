@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
+
 from django.utils import timezone
 
 from inventory.models import RawMaterial, FinishedGood
@@ -8,7 +8,7 @@ from hr.models import TimeEntry
 from financials.models import Expense
 
 
-@login_required
+
 def dashboard(request):
     today = timezone.localdate()
     month_start = today.replace(day=1)
